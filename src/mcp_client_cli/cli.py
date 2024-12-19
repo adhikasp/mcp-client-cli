@@ -36,8 +36,16 @@ CONFIG_DIR = Path.home() / ".llm"
 SQLITE_DB = CONFIG_DIR / "conversations.db"
 CACHE_DIR = CONFIG_DIR / "mcp-tools"
 
+
 def get_cached_tools(server_param: StdioServerParameters) -> Optional[List[types.Tool]]:
-    """Retrieve cached tools if available and not expired."""
+    """Retrieve cached tools if available and not expired.
+    
+    Args:
+        server_param (StdioServerParameters): The server parameters to identify the cache.
+    
+    Returns:
+        Optional[List[types.Tool]]: A list of tools if cache is available and not expired, otherwise None.
+    """
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache_key = f"{server_param.command}-{'-'.join(server_param.args)}".replace("/", "-")
     cache_file = CACHE_DIR / f"{cache_key}.json"
@@ -53,8 +61,14 @@ def get_cached_tools(server_param: StdioServerParameters) -> Optional[List[types
             
     return [types.Tool(**tool) for tool in cache_data["tools"]]
 
+
 def save_tools_cache(server_param: StdioServerParameters, tools: List[types.Tool]) -> None:
-    """Save tools to cache."""
+    """Save tools to cache.
+    
+    Args:
+        server_param (StdioServerParameters): The server parameters to identify the cache.
+        tools (List[types.Tool]): The list of tools to be cached.
+    """
     cache_key = f"{server_param.command}-{'-'.join(server_param.args)}".replace("/", "-")
     cache_file = CACHE_DIR / f"{cache_key}.json"
     
@@ -64,11 +78,20 @@ def save_tools_cache(server_param: StdioServerParameters, tools: List[types.Tool
     }
     cache_file.write_text(json.dumps(cache_data))
 
+
 def create_langchain_tool(
     tool_schema: types.Tool,
     server_params: StdioServerParameters
 ) -> BaseTool:
-    """Create a LangChain tool from MCP tool schema."""
+    """Create a LangChain tool from MCP tool schema.
+    
+    Args:
+        tool_schema (types.Tool): The MCP tool schema.
+        server_params (StdioServerParameters): The server parameters for the tool.
+    
+    Returns:
+        BaseTool: The created LangChain tool.
+    """
     input_model = jsonschema_to_pydantic(tool_schema.inputSchema)
     
     class McpTool(BaseTool):
@@ -91,8 +114,16 @@ def create_langchain_tool(
     
     return McpTool()
 
+
 async def convert_mcp_to_langchain_tools(server_params: List[StdioServerParameters]) -> List[BaseTool]:
-    """Convert MCP tools to LangChain tools."""
+    """Convert MCP tools to LangChain tools.
+    
+    Args:
+        server_params (List[StdioServerParameters]): A list of server parameters for MCP tools.
+    
+    Returns:
+        List[BaseTool]: A list of converted LangChain tools.
+    """
     langchain_tools = []
     
     for server_param in server_params:
@@ -115,10 +146,16 @@ async def convert_mcp_to_langchain_tools(server_params: List[StdioServerParamete
     
     return langchain_tools
 
+
+# The AgentState class is used to maintain the state of the agent during a conversation.
 class AgentState(TypedDict):
+    # A list of messages exchanged in the conversation.
     messages: Annotated[list[BaseMessage], add_messages]
+    # A flag indicating whether the current step is the last step in the conversation.
     is_last_step: IsLastStep
+    # The current date and time, used for context in the conversation.
     today_datetime: str
+
 
 class ConversationManager:
     """Manages conversation persistence in SQLite database."""
@@ -128,7 +165,11 @@ class ConversationManager:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
     
     async def _init_db(self, db) -> None:
-        """Initialize database schema."""
+        """Initialize database schema.
+        
+        Args:
+            db: The database connection object.
+        """
         await db.execute("""
             CREATE TABLE IF NOT EXISTS last_conversation (
                 id INTEGER PRIMARY KEY,
@@ -138,7 +179,11 @@ class ConversationManager:
         await db.commit()
     
     async def get_last_id(self) -> str:
-        """Get the thread ID of the last conversation."""
+        """Get the thread ID of the last conversation.
+        
+        Returns:
+            str: The thread ID of the last conversation, or a new UUID if no conversation exists.
+        """
         async with aiosqlite.connect(self.db_path) as db:
             await self._init_db(db)
             async with db.execute("SELECT thread_id FROM last_conversation LIMIT 1") as cursor:
@@ -146,7 +191,12 @@ class ConversationManager:
             return row[0] if row else uuid.uuid4().hex
     
     async def save_id(self, thread_id: str, db = None) -> None:
-        """Save thread ID as the last conversation."""
+        """Save thread ID as the last conversation.
+        
+        Args:
+            thread_id (str): The thread ID to save.
+            db: The database connection object (optional).
+        """
         if db is None:
             async with aiosqlite.connect(self.db_path) as db:
                 await self._save_id(db, thread_id)
@@ -154,7 +204,12 @@ class ConversationManager:
             await self._save_id(db, thread_id)
     
     async def _save_id(self, db, thread_id: str) -> None:
-        """Internal method to save thread ID."""
+        """Internal method to save thread ID.
+        
+        Args:
+            db: The database connection object.
+            thread_id (str): The thread ID to save.
+        """
         async with db.cursor() as cursor:
             await self._init_db(db)
             await cursor.execute("DELETE FROM last_conversation")
@@ -164,7 +219,13 @@ class ConversationManager:
             )
             await db.commit()
 
+
 async def run() -> None:
+    """Run the LangChain agent with MCP tools.
+    
+    This function initializes the agent, loads the configuration, and processes the query.
+    """
+    # Argument parsing and query determination
     parser = argparse.ArgumentParser(description='Run LangChain agent with MCP tools')
     parser.add_argument('query', nargs='*', default=[],
                        help='The query to process (default: read from stdin or use default query)')
@@ -180,6 +241,7 @@ async def run() -> None:
     if args.query and args.query[0] == "commit":
         query = "check git status and diff. Then commit it with descriptive and concise commit msg"
 
+    # Configuration file loading
     config_paths = [CONFIG_FILE, CONFIG_DIR / "config.json"]
     for path in config_paths:
         if os.path.exists(path):
@@ -189,6 +251,7 @@ async def run() -> None:
     else:
         raise FileNotFoundError(f"Could not find config file in any of: {', '.join(config_paths)}")
     
+    # Server parameters initialization
     server_params = [
         StdioServerParameters(
             command=config["command"],
@@ -198,9 +261,10 @@ async def run() -> None:
         for config in server_config["mcpServers"].values()
     ]
 
+    # LangChain tools conversion
     langchain_tools = await convert_mcp_to_langchain_tools(server_params)
     
-    # Initialize the model using config
+    # Model initialization
     llm_config = server_config.get("llm", {})
     model = init_chat_model(
         model=llm_config.get("model", "gpt-4o"),
@@ -210,14 +274,17 @@ async def run() -> None:
         base_url=llm_config.get("base_url")
     )
     
+    # Prompt creation
     prompt = ChatPromptTemplate.from_messages([
         ("system", server_config["systemPrompt"]),
         ("placeholder", "{messages}")
     ])
 
+    # Conversation manager initialization
     conversation_manager = ConversationManager(SQLITE_DB)
     
     async with AsyncSqliteSaver.from_conn_string(SQLITE_DB) as checkpointer:
+        # Agent executor creation
         agent_executor = create_react_agent(
             model, 
             langchain_tools, 
@@ -226,7 +293,7 @@ async def run() -> None:
             checkpointer=checkpointer
         )
         
-        # Check if this is a continuation
+        # Query processing and continuation check
         is_continuation = query.startswith('c ')
         if is_continuation:
             query = query[2:]  # Remove 'c ' prefix
@@ -238,6 +305,7 @@ async def run() -> None:
             "today_datetime": datetime.now().isoformat(),
         }
         
+        # Message streaming and tool calls handling
         async for chunk in agent_executor.astream(
             input_messages,
             stream_mode=["messages", "values"],
@@ -276,11 +344,14 @@ async def run() -> None:
                         print("\n".join(lines))
         print()
 
-        # Save the thread_id as the last conversation
+        # Saving the last conversation thread ID
         await conversation_manager.save_id(thread_id, checkpointer.conn)
 
+
 def main() -> None:
+    """Entry point of the script."""
     asyncio.run(run())
+
 
 if __name__ == "__main__":
     main()
