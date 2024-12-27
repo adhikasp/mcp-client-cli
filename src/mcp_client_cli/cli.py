@@ -112,6 +112,7 @@ Examples:
             table.add_row(tool.toolkit_name, tool.name, tool.description)
 
         console.print(table)
+        await cleanup(toolkits)
         return
 
     # Handle --list-prompts argument
@@ -122,10 +123,14 @@ Examples:
         table.add_column("Template")
         table.add_column("Arguments")
         
-        for name, template in prompt_templates.items():
-            table.add_row(name, template, ", ".join(re.findall(r'\{(\w+)\}', template)))
+        prompt_templates = [prompt for toolkit in toolkits for prompt in toolkit._prompts]
+        print(prompt_templates)
+        for template in prompt_templates:
+            args = template.arguments[0].name
+            table.add_row(template.name, template.description, args)
             
         console.print(table)
+        await cleanup(toolkits)
         return
 
     # Model initialization
@@ -195,6 +200,9 @@ Examples:
         # Saving the last conversation thread ID
         await conversation_manager.save_id(thread_id, checkpointer.conn)
 
+    await cleanup(toolkits)
+
+async def cleanup(toolkits):
     for toolkit in toolkits:
         await toolkit.close()
 

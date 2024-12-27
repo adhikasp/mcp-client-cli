@@ -16,7 +16,6 @@ dependencies = [
     "langgraph>=0.2.53",
     "langchain-openai>=0.2.10",
     "langchain-google-genai>=2.0.7",
-    "jsonschema-pydantic>=0.6",
     "aiosqlite>=0.20.0",
     "langgraph-checkpoint-sqlite>=2.0.1",
     "rich>=13.9.0",

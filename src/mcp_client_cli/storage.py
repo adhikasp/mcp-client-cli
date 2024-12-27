@@ -32,20 +32,48 @@ def get_cached_tools(server_param: StdioServerParameters) -> Optional[List[types
     return [types.Tool(**tool) for tool in cache_data["tools"]]
 
 
-def save_tools_cache(server_param: StdioServerParameters, tools: List[types.Tool]) -> None:
-    """Save tools to cache.
+def get_cached_prompts(server_param: StdioServerParameters) -> Optional[List[types.Prompt]]:
+    """Retrieve cached prompts if available and not expired.
+    
+    Args:
+        server_param (StdioServerParameters): The server parameters to identify the cache.
+    
+    Returns:
+        Optional[List[types.Prompt]]: A list of prompts if cache is available and not expired, otherwise None.
+    """
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_key = f"{server_param.command}-{'-'.join(server_param.args)}".replace("/", "-")
+    cache_file = CACHE_DIR / f"{cache_key}.json"
+    
+    if not cache_file.exists():
+        return None
+        
+    cache_data = json.loads(cache_file.read_text())
+    cached_time = datetime.fromisoformat(cache_data["cached_at"])
+    
+    if datetime.now() - cached_time > timedelta(hours=CACHE_EXPIRY_HOURS):
+        return None
+            
+    return [types.Prompt(**prompt) for prompt in cache_data["prompts"]] if "prompts" in cache_data else None
+
+
+def save_tools_cache(server_param: StdioServerParameters, tools: List[types.Tool], prompts: Optional[List[types.Prompt]] = None) -> None:
+    """Save tools and prompts to cache.
     
     Args:
         server_param (StdioServerParameters): The server parameters to identify the cache.
         tools (List[types.Tool]): The list of tools to be cached.
+        prompts (Optional[List[types.Prompt]]): The list of prompts to be cached.
     """
     cache_key = f"{server_param.command}-{'-'.join(server_param.args)}".replace("/", "-")
     cache_file = CACHE_DIR / f"{cache_key}.json"
     
     cache_data = {
         "cached_at": datetime.now().isoformat(),
-        "tools": [tool.model_dump() for tool in tools]
+        "tools": [tool.model_dump() for tool in tools],
     }
+    if prompts:
+        cache_data["prompts"] = [prompt.model_dump() for prompt in prompts]
     cache_file.write_text(json.dumps(cache_data))
 
 
