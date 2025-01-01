@@ -8,25 +8,22 @@ from datetime import datetime
 import argparse
 import asyncio
 import os
-from typing import Annotated, TypedDict
 import uuid
 import sys
 import re
 import anyio
-from langchain_core.messages import BaseMessage, HumanMessage
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.language_models.chat_models import BaseChatModel
-from langgraph.prebuilt import create_react_agent
-from langgraph.managed import IsLastStep
-from langgraph.graph.message import add_messages
-from langchain.chat_models import init_chat_model
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from rich.console import Console
-from rich.table import Table
 import base64
 import imghdr
 import mimetypes
 
+from langchain_core.messages import HumanMessage
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain.chat_models import init_chat_model
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from rich.console import Console
+from rich.table import Table
+
+from .agent import *
 from .input import *
 from .const import *
 from .output import *
@@ -35,17 +32,6 @@ from .tool import *
 from .prompt import *
 from .memory import *
 from .config import AppConfig
-
-# The AgentState class is used to maintain the state of the agent during a conversation.
-class AgentState(TypedDict):
-    # A list of messages exchanged in the conversation.
-    messages: Annotated[list[BaseMessage], add_messages]
-    # A flag indicating whether the current step is the last step in the conversation.
-    is_last_step: IsLastStep
-    # The current date and time, used for context in the conversation.
-    today_datetime: str
-    # The user's memories.
-    memories: str = "no memories"
 
 async def run() -> None:
     """Run the LLM agent."""
@@ -211,20 +197,18 @@ async def handle_conversation(args: argparse.Namespace, query: HumanMessage,
         extra_body=extra_body
     )
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", app_config.system_prompt),
-        ("placeholder", "{messages}")
-    ])
-
     conversation_manager = ConversationManager(SQLITE_DB)
     
     async with AsyncSqliteSaver.from_conn_string(SQLITE_DB) as checkpointer:
         store = SqliteStore(SQLITE_DB)
         memories = await get_memories(store)
         formatted_memories = "\n".join(f"- {memory}" for memory in memories)
-        agent_executor = create_react_agent(
-            model, tools, state_schema=AgentState, 
-            state_modifier=prompt, checkpointer=checkpointer, store=store
+        agent_executor = ReActAgent(
+            model=model,
+            system_prompt=app_config.system_prompt,
+            tools=tools,
+            checkpointer=checkpointer,
+            store=store
         )
         
         thread_id = (await conversation_manager.get_last_id() if is_conversation_continuation 
@@ -241,9 +225,7 @@ async def handle_conversation(args: argparse.Namespace, query: HumanMessage,
         try:
             async for chunk in agent_executor.astream(
                 input_messages,
-                stream_mode=["messages", "values"],
-                config={"configurable": {"thread_id": thread_id, "user_id": "myself"}, 
-                       "recursion_limit": 100}
+                thread_id=thread_id,
             ):
                 output.update(chunk)
                 if not args.no_confirmations:

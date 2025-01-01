@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 @tool
 async def save_memory(memories: List[str], *, config: RunnableConfig, store: Annotated[BaseStore, InjectedStore()]) -> str:
     '''Save the given memory for the current user. Do not save duplicate memories.'''
-    user_id = config.get("configurable", {}).get("user_id")
+    user_id = config.get("configurable", {}).get("user_id", "myself")
     namespace = ("memories", user_id)
     for memory in memories:
         id = uuid.uuid4().hex
