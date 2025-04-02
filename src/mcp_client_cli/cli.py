@@ -26,6 +26,7 @@ from rich.table import Table
 import base64
 import imghdr as imghdr
 import mimetypes
+from dotenv import load_dotenv, find_dotenv
 
 from .input import *
 from .const import *
@@ -50,6 +51,8 @@ class AgentState(TypedDict):
 
 async def run() -> None:
     """Run the LLM agent."""
+    load_dotenv(find_dotenv())
+    
     args = setup_argument_parser()
     query, is_conversation_continuation = parse_query(args)
     app_config = AppConfig.load()
