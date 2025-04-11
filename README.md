@@ -1,5 +1,13 @@
-# MCP CLI client
+# MCP CLI client with GigaChat Support
 
+# GigaChat configuration
+```
+cp .env.example .env
+```
+
+Configure your credentials to access GigaChat. Check https://github.com/ai-forever/gigachat to read about auth methods.
+
+# Original readme:
 A simple CLI program to run LLM prompt and implement [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) client.
 
 You can use any [MCP-compatible servers](https://github.com/punkpeye/awesome-mcp-servers) from the convenience of your terminal.

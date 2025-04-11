@@ -209,19 +209,35 @@ async def handle_conversation(args: argparse.Namespace, query: HumanMessage,
     # Override model if specified in command line
     if args.model:
         app_config.llm.model = args.model
+    
+    if app_config.llm.provider == "gigachat":
+        from langchain_gigachat import GigaChat
         
-    model: BaseChatModel = init_chat_model(
-        model=app_config.llm.model,
-        model_provider=app_config.llm.provider,
-        api_key=app_config.llm.api_key,
-        temperature=app_config.llm.temperature,
-        base_url=app_config.llm.base_url,
-        default_headers={
-            "X-Title": "mcp-client-cli",
-            "HTTP-Referer": "https://github.com/adhikasp/mcp-client-cli",
-        },
-        extra_body=extra_body
-    )
+        model: BaseChatModel = GigaChat(
+            model=app_config.llm.model,
+            model_provider=app_config.llm.provider,
+            api_key=app_config.llm.api_key,
+            temperature=app_config.llm.temperature,
+            base_url=app_config.llm.base_url,
+            default_headers={
+                "X-Title": "mcp-client-cli",
+                "HTTP-Referer": "https://github.com/adhikasp/mcp-client-cli",
+            },
+            extra_body=extra_body
+        )
+    else:
+        model: BaseChatModel = init_chat_model(
+            model=app_config.llm.model,
+            model_provider=app_config.llm.provider,
+            api_key=app_config.llm.api_key,
+            temperature=app_config.llm.temperature,
+            base_url=app_config.llm.base_url,
+            default_headers={
+                "X-Title": "mcp-client-cli",
+                "HTTP-Referer": "https://github.com/adhikasp/mcp-client-cli",
+            },
+            extra_body=extra_body
+        )
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", app_config.system_prompt),

@@ -8,9 +8,11 @@ wheels/
 
 # Virtual environments
 .venv
+venv
 .env
 
 mcp-server-config.json
 
 .DS_Store
 repomix-output.md
+.vscode

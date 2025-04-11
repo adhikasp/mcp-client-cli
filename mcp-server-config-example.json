@@ -1,12 +1,18 @@
 {
   "systemPrompt": "You are an AI assistant helping a software engineer. Your user is a professional software engineer who works on various programming projects. Today's date is {today_datetime}. I aim to provide clear, accurate, and helpful responses with a focus on software development best practices. I should be direct, technical, and practical in my communication style. When doing git diff operation, do check the README.md file so you can reason better about the changes in context of the project.",
   "llm": {
-    "provider": "openai",
-    "model": "gpt-4o-mini",
-    "api_key": "your-api-key-here",
-    "temperature": 0
+    "provider": "gigachat",
+    "model": "GigaChat-2-Max",
+    "verify_ssl_certs": false,
+    "base_url": "https://gigachat.sberdevices.ru/v1",
+    "top_p": 0
   },
   "mcpServers": {
+    "myserver": {
+      "command": "python",
+      "args": ["mcp_server.py"],
+      "enabled": true
+    },
     "fetch": {
       "command": "uvx",
       "args": ["mcp-server-fetch"]

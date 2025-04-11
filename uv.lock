@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version < '3.12.4'",
@@ -286,6 +287,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/42/0595b3dbffc2e82d7fe658c12d5a5bafcd7516c6bf2d1d1feb5387caa9c1/frozenlist-1.5.0-cp313-cp313-win32.whl", hash = "sha256:31a9ac2b38ab9b5a8933b693db4939764ad3f299fcaa931a3e605bc3460e693c", size = 44914 },
     { url = "https://files.pythonhosted.org/packages/17/c4/b7db1206a3fea44bf3b838ca61deb6f74424a8a5db1dd53ecb21da669be6/frozenlist-1.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:11aabdd62b8b9c4b84081a3c246506d1cddd2dd93ff0ad53ede5defec7886b28", size = 51167 },
     { url = "https://files.pythonhosted.org/packages/c6/c8/a5be5b7550c10858fcf9b0ea054baccab474da77d37f1e828ce043a3a5d4/frozenlist-1.5.0-py3-none-any.whl", hash = "sha256:d994863bba198a4a518b467bb971c56e1db3f180a25c6cf7bb1949c267f748c3", size = 11901 },
+]
+
+[[package]]
+name = "gigachat"
+version = "0.1.39.post1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/46/08/0af29564a79f9ed660e4928e3641b9bc042fcf0a2fc4bf3234f7e1cd94c9/gigachat-0.1.39.post1.tar.gz", hash = "sha256:5d7d14c3340e72c24f09ba0755324a3937da6ee45b5ce9f7aab4d4037b050db6", size = 32491 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/68/63/8b74e70b7b9496dc72b4f551b0ee12aacaa2a871a1d6cf60830a2e0df78f/gigachat-0.1.39.post1-py3-none-any.whl", hash = "sha256:7b60d9ce08d874b118f55ebe18b8ff0c7fa53ae2437d07a86a714773ea7bb212", size = 67299 },
 ]
 
 [[package]]
@@ -602,6 +616,20 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-gigachat"
+version = "0.3.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "gigachat" },
+    { name = "langchain-core" },
+    { name = "types-requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/46/e3/21fd8969e9cca7a22358bc7bb49fb2a1778e3eeaac52d81c92171e721fee/langchain_gigachat-0.3.10.tar.gz", hash = "sha256:67dfe48db0d35f0229dfc0c3b04d3ec90b476b512a13a6f64483f431ce8bb9a2", size = 22487 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/5b/ebcfb534424f665baca147f0558e8f17e92a4dda49852050b9ed8358b05a/langchain_gigachat-0.3.10-py3-none-any.whl", hash = "sha256:a9ebf2fa1de86479001b0d5e5942427210871eb5923b1dd8a0bf9757041af23b", size = 27209 },
+]
+
+[[package]]
 name = "langchain-google-genai"
 version = "2.0.11"
 source = { registry = "https://pypi.org/simple" }
@@ -762,7 +790,7 @@ wheels = [
 
 [[package]]
 name = "mcp-client-cli"
-version = "0.3.0"
+version = "1.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -770,6 +798,7 @@ dependencies = [
     { name = "jsonschema-pydantic" },
     { name = "langchain" },
     { name = "langchain-anthropic" },
+    { name = "langchain-gigachat" },
     { name = "langchain-google-genai" },
     { name = "langchain-openai" },
     { name = "langgraph" },
@@ -794,6 +823,7 @@ requires-dist = [
     { name = "jsonschema-pydantic", specifier = ">=0.6" },
     { name = "langchain", specifier = ">=0.3.8" },
     { name = "langchain-anthropic", specifier = ">=0.3.0" },
+    { name = "langchain-gigachat", specifier = ">=0.3.9" },
     { name = "langchain-google-genai", specifier = ">=2.0.7" },
     { name = "langchain-openai", specifier = ">=0.2.10" },
     { name = "langgraph", specifier = ">=0.2.53" },
@@ -807,6 +837,7 @@ requires-dist = [
     { name = "rich", specifier = ">=13.9.0" },
     { name = "standard-imghdr", specifier = ">=3.13.0" },
 ]
+provides-extras = ["clipboard"]
 
 [[package]]
 name = "mdurl"
@@ -1370,6 +1401,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/30/dc54f88dd4a2b5dc8a0279bdd7270e735851848b762aeb1c1184ed1f6b14/tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2", size = 78540 },
+]
+
+[[package]]
+name = "types-requests"
+version = "2.32.0.20250328"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/00/7d/eb174f74e3f5634eaacb38031bbe467dfe2e545bc255e5c90096ec46bc46/types_requests-2.32.0.20250328.tar.gz", hash = "sha256:c9e67228ea103bd811c96984fac36ed2ae8da87a36a633964a21f199d60baf32", size = 22995 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/15/3700282a9d4ea3b37044264d3e4d1b1f0095a4ebf860a99914fd544e3be3/types_requests-2.32.0.20250328-py3-none-any.whl", hash = "sha256:72ff80f84b15eb3aa7a8e2625fffb6a93f2ad5a0c20215fc1dcfa61117bcb2a2", size = 20663 },
 ]
 
 [[package]]
