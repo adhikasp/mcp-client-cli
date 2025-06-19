@@ -21,12 +21,21 @@ The configuration file can be placed in either:
     "base_url": "string"
   },
   "mcpServers": {
-    "server_name": {
+    "stdio_server_name": {
       "command": "string",
       "args": ["string"],
       "env": {
         "ENV_VAR_NAME": "value"
       },
+      "enabled": boolean,
+      "exclude_tools": ["string"],
+      "requires_confirmation": ["string"]
+    },
+    "remote_server_name": {
+      "url": "string",
+      "headers": {},
+      "timeout": float,
+      "sse_read_timeout": float,
       "enabled": boolean,
       "exclude_tools": ["string"],
       "requires_confirmation": ["string"]
@@ -62,9 +71,13 @@ The configuration file can be placed in either:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `command` | string | Yes | - | Command to run the server |
+| `command` | string | Yes (stdio mode) | - | Command to run the server |
 | `args` | array | No | `[]` | Command-line arguments |
 | `env` | object | No | `{}` | Environment variables |
+| `url` | string | Yes (sse or streamable-http mode) | - | Sse or Streamable-HTTP url |
+| `headers` | object | No | `{}` | Http request headers |
+| `timeout` | number | No | 30 | Http request timeout |
+| `sse_read_timeout` | number | No | 300 | Sse data read timeout |
 | `enabled` | boolean | No | `true` | Whether the server is enabled |
 | `exclude_tools` | array | No | `[]` | Tool names to exclude |
 | `requires_confirmation` | array | No | `[]` | Tools requiring user confirmation |
@@ -84,6 +97,17 @@ The configuration file can be placed in either:
     "fetch": {
       "command": "uvx",
       "args": ["mcp-server-fetch"]
+    },
+    "add": {
+      "url": "http://localhost:8000/sse",
+      "headers": {},
+      "timeout": 50,
+      "requires_confirmation": ["add"]
+    },
+    "subtract": {
+      "url": "http://localhost:8000/mcp", 
+      "headers": {},
+      "timeout": 50
     },
     "brave-search": {
       "command": "npx",

@@ -5,7 +5,6 @@ from pathlib import Path
 import os
 import commentjson
 from typing import Dict, List, Optional
-
 from .const import CONFIG_FILE, CONFIG_DIR
 
 @dataclass
@@ -31,7 +30,13 @@ class LLMConfig:
 @dataclass
 class ServerConfig:
     """Configuration for an MCP server."""
-    command: str
+    url: str = None
+    headers: dict[str, str] | None = None
+    timeout: float = 30
+    sse_read_timeout: float = 60 * 5
+    terminate_on_close: bool = True
+
+    command: str = None
     args: List[str] = None
     env: Dict[str, str] = None
     enabled: bool = True
@@ -42,7 +47,11 @@ class ServerConfig:
     def from_dict(cls, config: dict) -> "ServerConfig":
         """Create ServerConfig from dictionary."""
         return cls(
-            command=config["command"],
+            url=config.get("url", ""),
+            headers=config.get("headers", {}),
+            timeout=config.get("timeout", 30),
+            sse_read_timeout=config.get("sse_read_timeout", 60 * 5),
+            command=config.get("command", ""),
             args=config.get("args", []),
             env=config.get("env", {}),
             enabled=config.get("enabled", True),
@@ -67,7 +76,7 @@ class AppConfig:
         if chosen_path is None:
             raise FileNotFoundError(f"Could not find config file in any of: {', '.join(map(str, config_paths))}")
 
-        with open(chosen_path, 'r') as f:
+        with open(chosen_path, 'r', encoding='utf-8') as f:
             config = commentjson.load(f)
 
         # Extract tools requiring confirmation

@@ -11,6 +11,21 @@
       "command": "uvx",
       "args": ["mcp-server-fetch"]
     },
+    "add": {
+      "url": "http://localhost:8000/sse",
+      "headers": {},
+      "timeout": 50,
+      "requires_confirmation": ["add"],
+      "enabled": true,  
+      "exclude_tools": []  
+    },
+    "subtract": {
+      "url": "http://localhost:8000/mcp", 
+      "headers": {},
+      "timeout": 50,
+      "enabled": true,  
+      "exclude_tools": []
+    },
     "brave-search": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-brave-search"],

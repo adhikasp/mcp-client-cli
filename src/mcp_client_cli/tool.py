@@ -1,14 +1,16 @@
-from typing import List, Type, Optional, Any, override
+from typing import List, Type, Optional, Union
 from pydantic import BaseModel
 from langchain_core.tools import BaseTool, BaseToolkit, ToolException
 from mcp import StdioServerParameters, types, ClientSession
 from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.sse import sse_client
 import pydantic
 from pydantic_core import to_json
 from jsonschema_pydantic import jsonschema_to_pydantic
 import asyncio
-
 from .storage import *
+from .const import McpType, StramableHttpOrSseParameters
 
 class McpServerConfig(BaseModel):
     """Configuration for an MCP server.
@@ -22,19 +24,21 @@ class McpServerConfig(BaseModel):
             command, arguments and environment variables
         exclude_tools (list[str]): List of tool names to exclude from this server
     """
-    
+    mcp_type: McpType
     server_name: str
-    server_param: StdioServerParameters
+    server_param: Union[StdioServerParameters, StramableHttpOrSseParameters]
     exclude_tools: list[str] = []
+
 
 class McpToolkit(BaseToolkit):
     name: str
-    server_param: StdioServerParameters
+    mcp_type: McpType
+    server_param: Union[StdioServerParameters, StramableHttpOrSseParameters]
     exclude_tools: list[str] = []
     _session: Optional[ClientSession] = None
     _tools: List[BaseTool] = []
     _client = None
-    _init_lock: asyncio.Lock = None
+    _init_lock: asyncio.Lock | None = None
 
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
@@ -46,9 +50,23 @@ class McpToolkit(BaseToolkit):
         async with self._init_lock:
             if self._session:
                 return self._session
-
-            self._client = stdio_client(self.server_param)
-            read, write = await self._client.__aenter__()
+            read, write, get_session_id = None, None, None
+            if self.mcp_type == McpType.STDIO:
+                self._client = stdio_client(self.server_param)
+                read, write = await self._client.__aenter__()
+            elif self.mcp_type == McpType.STREAMABLE_HTTP:
+                self._client = streamablehttp_client(url=self.server_param.url,
+                                                     headers=self.server_param.headers,
+                                                     timeout=self.server_param.timeout,
+                                                     sse_read_timeout=self.server_param.sse_read_timeout,
+                                                     terminate_on_close=self.server_param.terminate_on_close)
+                read, write, _ = await self._client.__aenter__()
+            elif self.mcp_type == McpType.SSE:
+                self._client = sse_client(url=self.server_param.url,
+                                          headers=self.server_param.headers,
+                                          timeout=self.server_param.timeout,
+                                          sse_read_timeout=self.server_param.sse_read_timeout,)
+                read, write = await self._client.__aenter__()
             self._session = ClientSession(read, write)
             await self._session.__aenter__()
             await self._session.initialize()
@@ -75,7 +93,7 @@ class McpToolkit(BaseToolkit):
                     continue
                 self._tools.append(create_langchain_tool(tool, self._session, self))
         except Exception as e:
-            print(f"Error gathering tools for {self.server_param.command} {' '.join(self.server_param.args)}: {e}")
+            print(f"Error gathering tools for {self.server_param.model_dump()}")
             raise e
         
     async def close(self):
@@ -167,6 +185,7 @@ async def convert_mcp_to_langchain_tools(server_config: McpServerConfig, force_r
         McpToolkit: A toolkit containing the converted LangChain tools.
     """
     toolkit = McpToolkit(
+        mcp_type=server_config.mcp_type,
         name=server_config.server_name, 
         server_param=server_config.server_param,
         exclude_tools=server_config.exclude_tools
