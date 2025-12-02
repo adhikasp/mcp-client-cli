@@ -223,7 +223,7 @@ async def handle_conversation(args: argparse.Namespace, query: HumanMessage,
     prompt = ChatPromptTemplate.from_messages([
         ("system", app_config.system_prompt),
         ("placeholder", "{messages}")
-    ])
+    ]).partial(today_datetime=datetime.now().isoformat())
 
     conversation_manager = ConversationManager(SQLITE_DB)
     
@@ -233,7 +233,7 @@ async def handle_conversation(args: argparse.Namespace, query: HumanMessage,
         formatted_memories = "\n".join(f"- {memory}" for memory in memories)
         agent_executor = create_react_agent(
             model, tools, state_schema=AgentState, 
-            state_modifier=prompt, checkpointer=checkpointer, store=store
+            prompt=prompt, checkpointer=checkpointer, store=store
         )
         
         thread_id = (await conversation_manager.get_last_id() if is_conversation_continuation 
