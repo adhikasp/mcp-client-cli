@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Union
 from mcp import StdioServerParameters, types
 import json
 import aiosqlite
@@ -7,17 +7,20 @@ import uuid
 
 from .const import *
 
-def get_cached_tools(server_param: StdioServerParameters) -> Optional[List[types.Tool]]:
+def get_cached_tools(server_param: Union[StdioServerParameters, StramableHttpOrSseParameters]) -> Optional[List[types.Tool]]:
     """Retrieve cached tools if available and not expired.
     
     Args:
-        server_param (StdioServerParameters): The server parameters to identify the cache.
+        server_param (StdioServerParameters | StramableHttpOrSseParameters): The server parameters to identify the cache.
     
     Returns:
         Optional[List[types.Tool]]: A list of tools if cache is available and not expired, otherwise None.
     """
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    cache_key = f"{server_param.command}-{'-'.join(server_param.args)}".replace("/", "-")
+    if isinstance(server_param, StdioServerParameters):
+        cache_key = f"{server_param.command}-{'-'.join(server_param.args)}".replace("/", "-")
+    elif isinstance(server_param, StramableHttpOrSseParameters):
+        cache_key = f"{server_param.url}".replace("/", "-").replace(':', '')
     cache_file = CACHE_DIR / f"{cache_key}.json"
     
     if not cache_file.exists():
@@ -32,14 +35,18 @@ def get_cached_tools(server_param: StdioServerParameters) -> Optional[List[types
     return [types.Tool(**tool) for tool in cache_data["tools"]]
 
 
-def save_tools_cache(server_param: StdioServerParameters, tools: List[types.Tool]) -> None:
+def save_tools_cache(server_param: Union[StdioServerParameters, StramableHttpOrSseParameters], 
+                     tools: List[types.Tool]) -> None:
     """Save tools to cache.
     
     Args:
-        server_param (StdioServerParameters): The server parameters to identify the cache.
+        server_param (StdioServerParameters | StramableHttpOrSseParameters): The server parameters to identify the cache.
         tools (List[types.Tool]): The list of tools to be cached.
     """
-    cache_key = f"{server_param.command}-{'-'.join(server_param.args)}".replace("/", "-")
+    if isinstance(server_param, StdioServerParameters):
+        cache_key = f"{server_param.command}-{'-'.join(server_param.args)}".replace("/", "-")
+    elif isinstance(server_param, StramableHttpOrSseParameters):
+        cache_key = f"{server_param.url}".replace("/", "-").replace(':', '')
     cache_file = CACHE_DIR / f"{cache_key}.json"
     
     cache_data = {

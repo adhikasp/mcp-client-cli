@@ -27,6 +27,21 @@ This act as alternative client beside Claude Desktop. Additionally you can use a
        "base_url": "https://api.openai.com/v1"  // Optional, for OpenRouter or other providers
      },
      "mcpServers": {
+       "add": {
+         "url": "http://localhost:8000/sse", // SSE
+         "headers": {},
+         "timeout": 50,
+         "requires_confirmation": ["add"],
+         "enabled": true,  // Optional, defaults to true
+         "exclude_tools": []  // Optional, list of tool names to exclude
+       },
+       "subtract": {
+         "url": "http://localhost:8000/mcp", //Streamable-HTTP
+         "headers": {},
+         "timeout": 50,
+         "enabled": true,  // Optional, defaults to true
+         "exclude_tools": []  // Optional, list of tool names to exclude
+       },
        "fetch": {
          "command": "uvx",
          "args": ["mcp-server-fetch"],

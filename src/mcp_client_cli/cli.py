@@ -111,18 +111,34 @@ Examples:
 
 async def handle_list_tools(app_config: AppConfig, args: argparse.Namespace) -> None:
     """Handle the --list-tools command."""
-    server_configs = [
-        McpServerConfig(
-            server_name=name,
-            server_param=StdioServerParameters(
+    server_configs = []
+    for name, config in app_config.get_enabled_servers().items():
+        mcp_type = McpType.STDIO
+        server_param = None
+        if config.command:
+            server_param = StdioServerParameters(
                 command=config.command,
                 args=config.args or [],
                 env={**(config.env or {}), **os.environ}
-            ),
+            )
+        elif config.url and config.url.endswith('sse'):
+            mcp_type = McpType.SSE
+        elif config.url:
+            mcp_type = McpType.STREAMABLE_HTTP
+        if server_param is None:
+            server_param = StramableHttpOrSseParameters(
+                url = config.url,
+                headers=config.headers,
+                timeout=config.timeout,
+                sse_read_timeout=config.sse_read_timeout,
+                terminate_on_close=config.terminate_on_close,
+            )
+        server_configs.append(McpServerConfig(
+            mcp_type=mcp_type,
+            server_name=name,
+            server_param=server_param,
             exclude_tools=config.exclude_tools or []
-        )
-        for name, config in app_config.get_enabled_servers().items()
-    ]
+        ))
     toolkits, tools = await load_tools(server_configs, args.no_tools, args.force_refresh)
     
     console = Console()
@@ -186,18 +202,34 @@ async def load_tools(server_configs: list[McpServerConfig], no_tools: bool, forc
 async def handle_conversation(args: argparse.Namespace, query: HumanMessage, 
                             is_conversation_continuation: bool, app_config: AppConfig) -> None:
     """Handle the main conversation flow."""
-    server_configs = [
-        McpServerConfig(
-            server_name=name,
-            server_param=StdioServerParameters(
+    server_configs = []
+    for name, config in app_config.get_enabled_servers().items():
+        mcp_type = McpType.STDIO
+        server_param = None
+        if config.command:
+            server_param = StdioServerParameters(
                 command=config.command,
                 args=config.args or [],
                 env={**(config.env or {}), **os.environ}
-            ),
+            )
+        elif config.url and config.url.endswith('sse'):
+            mcp_type = McpType.SSE
+        elif config.url:
+            mcp_type = McpType.STREAMABLE_HTTP
+        if server_param is None:
+            server_param = StramableHttpOrSseParameters(
+                url = config.url,
+                headers=config.headers,
+                timeout=config.timeout,
+                sse_read_timeout=config.sse_read_timeout,
+                terminate_on_close=config.terminate_on_close
+            )
+        server_configs.append(McpServerConfig(
+            mcp_type=mcp_type,
+            server_name=name,
+            server_param=server_param,
             exclude_tools=config.exclude_tools or []
-        )
-        for name, config in app_config.get_enabled_servers().items()
-    ]
+        ))
     toolkits, tools = await load_tools(server_configs, args.no_tools, args.force_refresh)
     
     extra_body = {}
@@ -238,14 +270,12 @@ async def handle_conversation(args: argparse.Namespace, query: HumanMessage,
         
         thread_id = (await conversation_manager.get_last_id() if is_conversation_continuation 
                     else uuid.uuid4().hex)
-
-        input_messages = AgentState(
-            messages=[query], 
-            today_datetime=datetime.now().isoformat(),
-            memories=formatted_memories,
-            remaining_steps=3
-        )
-
+        input_messages = {
+            "messages": [query],
+            "today_datetime": datetime.now().isoformat(),
+            "memories": formatted_memories,
+            "remaining_steps": 3
+        }
         output = OutputHandler(text_only=args.text_only, only_last_message=args.no_intermediates)
         output.start()
         try:
