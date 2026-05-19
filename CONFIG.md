@@ -69,6 +69,32 @@ The configuration file can be placed in either:
 | `exclude_tools` | array | No | `[]` | Tool names to exclude |
 | `requires_confirmation` | array | No | `[]` | Tools requiring user confirmation |
 
+### Guarding Local MCP Servers
+
+To inspect stdio MCP tool calls before they reach a local server, wrap the
+server command with [Armorer Guard](https://github.com/ArmorerLabs/Armorer-Guard):
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "armorer-guard",
+      "args": [
+        "mcp-proxy",
+        "--",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ]
+    }
+  }
+}
+```
+
+Armorer Guard runs locally and blocks unsafe `tools/call` arguments when it
+detects prompt injection, credentials, exfiltration risk, or dangerous actions.
+
 ## Example Configuration
 
 ```json

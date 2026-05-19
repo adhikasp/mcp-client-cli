@@ -57,6 +57,23 @@ This act as alternative client beside Claude Desktop. Additionally you can use a
    - The config file can be placed in either `~/.llm/config.json` or `$PWD/.llm/config.json`
    - You can comment the JSON config file with `//` if you like to switch around the configuration
 
+   To run a local MCP server behind a security gate, wrap its command with
+   [Armorer Guard](https://github.com/ArmorerLabs/Armorer-Guard):
+   ```json
+   {
+     "mcpServers": {
+       "fetch": {
+         "command": "armorer-guard",
+         "args": ["mcp-proxy", "--", "uvx", "mcp-server-fetch"]
+       }
+     }
+   }
+   ```
+
+   The proxy inspects MCP tool-call arguments locally for prompt injection,
+   credential leakage, exfiltration risk, and dangerous actions before
+   forwarding safe calls.
+
 3. Run the CLI:
    ```bash
    llm "What is the capital city of North Sumatra?"
