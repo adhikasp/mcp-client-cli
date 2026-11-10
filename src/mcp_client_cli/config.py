@@ -70,6 +70,13 @@ class AppConfig:
         with open(chosen_path, 'r') as f:
             config = commentjson.load(f)
 
+        missing_keys = [key for key in ("systemPrompt", "mcpServers") if key not in config]
+        if missing_keys:
+            raise ValueError(
+                f"Invalid config file {chosen_path}: "
+                f"missing required key(s): {', '.join(missing_keys)}"
+            )
+
         # Extract tools requiring confirmation
         tools_requires_confirmation = []
         for server_config in config["mcpServers"].values():
